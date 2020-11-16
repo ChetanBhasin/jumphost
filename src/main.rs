@@ -51,6 +51,10 @@ fn close_connection(id: &String, user: &String, host: &String) {
 }
 
 fn execute_process(port: u16, cmd: &mut Command) {
+    for (key, value) in std::env::vars() {
+        cmd.env(key, value);
+    }
+
     let mut cmd_handle = cmd
         .env("HTTPS_PROXY", format!("socks5://127.0.0.1:{}", port))
         .spawn()
@@ -63,16 +67,18 @@ fn execute_process(port: u16, cmd: &mut Command) {
                 "Could not properly finish executing the requested process: {}",
                 err,
             );
-            exit(1);
         }
     }
 }
 
 fn main() {
-    let host = String::from("bastion-stage.jimdo-platform-eks.net");
-    let user = String::from("ChetanBhasin");
-    let mut cmd = Command::new("kubectl");
-    cmd.arg("-n").arg("kube-system").arg("get").arg("all");
+    //let mut args: Vec<String> = std::env::args().collect();
+    //let mut cmd = Command::new(args[1].as_str());
+    //cmd.args(args.drain(2..args.len()));
+    let mut cmd = Command::new("/bin/bash");
+    cmd.args(std::env::args());
+    let host: String = String::from(std::env::var_os("JH_HOST").unwrap().to_str().unwrap());
+    let user: String = String::from(std::env::var_os("JH_USER").unwrap().to_str().unwrap());
     match get_available_port() {
         Some(port) => {
             establish_connection(&String::from("id"), &port, &user, &host);
